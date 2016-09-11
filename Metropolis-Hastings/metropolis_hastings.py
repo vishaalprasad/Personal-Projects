@@ -23,7 +23,7 @@ import scipy.stats
 def gauss_pdf(x, mean=0,stddev=1.0):
 	return math.exp(-(x-mean)**2/(2*stddev**2)) #don't worry about norm const!
 
-#Given some probabliity p, determine whether to accept or reject.
+#Given some probabliity p, used to determine whether to accept or reject.
 def standard_uniform(p):
 	if p >= random.uniform(0,1):
 		return True
@@ -44,45 +44,37 @@ True mean, sigma: The parameters for our true model that we are sampling from.
 
 
 '''
-def gaussian_metropolis_hastings(
-								initial=0, 
-								iterations=10000, 
-								count=5000, 
-								proposal_mean=0,
-								proposal_sigma=1.0,
-								true_mean=0,
-								true_sigma=1.0):
+def gaussian_metropolis_hastings(initial=0, iterations=10000, count=5000, proposal_mean=0, 
+				 proposal_sigma=1.0, true_mean=0, true_sigma=1.0):
 
 	states = []
 	states.append(initial)
 	curr = initial
 	for i in range (0, iterations):
-		proposal = scipy.stats.norm.rvs(proposal_mean, proposal_sigma)
-		ap = min(1, gauss_pdf(proposal, true_mean, true_sigma)/
+		proposal = scipy.stats.norm.rvs(proposal_mean, proposal_sigma) #gives us a proposal based on the proposal dist
+		ap = min(1, gauss_pdf(proposal, true_mean, true_sigma)/ #acceptance probability
 			gauss_pdf(curr, true_mean, true_sigma))
 		if standard_uniform(ap):
 			curr = proposal
 		states.append(curr)
 
-	return states[-count:]
+	return states[-count:] #return the last "count" entries
 
 # Visualize the gaussian metropolis hastings
-def visualize_gaussian_metropolis_hastings_estimate(mean, sigma):
+def visualize_gaussian_metropolis_hastings_estimate(proposal_sigma, proposal_mean, mean, sigma):
 	ys = []
 	xs = []
-	i_list = np.mgrid[-5:5:200j]
+	i_list = np.mgrid[-5:5:200j] # This will allow us to model the pdf of any distribution directly via discretization
 	for i in i_list:
 		xs.append(i)
-		ys.append(scipy.stats.norm(0, 1).pdf(i))
+		ys.append(scipy.stats.norm(mean, sigma).pdf(i))
 	plt.plot(xs, ys, label='True Gaussian Distribution: mean='+str(mean)+
 		', sigma='+str(sigma))
-	res = gaussian_metropolis_hastings(iterations = 1000000, count = 800000, proposal_sigma = 5, true_mean = mean, true_sigma = sigma)
-	plt.hist(res, normed=True, bins=100, histtype='step', label='Metropolis-Hastings Approximation')
+	approx = gaussian_metropolis_hastings(iterations = 1000000, count = 800000, proposal_sigma = 5, true_mean = mean, true_sigma = sigma)
+	plt.hist(approx, normed=True, bins=100, histtype='step', label='Metropolis-Hastings Approximation')
 	plt.legend()
 	plt.show()
 
 
 if __name__ == '__main__':
-	visualize_gaussian_metropolis_hastings_estimate(0, 1.0)
-
-
+	visualize_gaussian_metropolis_hastings_estimate(0, 5.0, 0, 1.0)
